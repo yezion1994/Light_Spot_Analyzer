@@ -16,7 +16,7 @@ from functions import functions
 class image_analyzer:
     
     def __init__(self, ):
-        self.fname,self.cb, self.sample= [],[],[]
+        self.fname,self.sample= [],[]
         self.button_4, self.box = [], []
         self.x0, self.y0 = 0,0
         self.win = self.setWin()
@@ -86,6 +86,7 @@ class image_analyzer:
     def setCanvas(self):
         # draw figure & induce fig toolbar
         self.fig1 = Figure(figsize=(5, 4), dpi=100)
+        self.colorbar = []
         self.axis1 = self.fig1.add_subplot(111)
         self.axis11 = self.fig1.add_subplot(111)
         self.canvas1 = FigureCanvasTkAgg(self.fig1, master=self.win.f1)  # A tk.DrawingArea.
@@ -135,72 +136,79 @@ class image_analyzer:
             self.lbox.insert(tk.END, item)
     
     def _load(self):
-        # global sample
-        # global cb
-        # global fname
-        # choose file
+        # extract information from GUI and initiate class "function"
         x = self.lbox.curselection()[0]
-        self.fname = self.lbox.get(x)
-        fname = self.fname
-        print(fname)
+        fname = self.fname = self.lbox.get(x)
         step = float(self.step_input.get())
-        self.sample = functions(step,fname)
-        x = self.sample.counts_subtractedBG[:,:,0]
-        y = self.sample.counts_subtractedBG[:,:,1]
-        z = self.sample.counts_subtractedBG[:,:,2]
+        sample = self.sample = functions(step,fname)
+        
+        # draw figure
+        axis1 = self.axis1
+        canvas1 = self.canvas1
+        fig1 = self.fig1
+        
+        print(fname)
+        sample = functions(step,fname)
+        x = sample.counts_subtractedBG[:,:,0]
+        y = sample.counts_subtractedBG[:,:,1]
+        z = sample.counts_subtractedBG[:,:,2]
         try:
-            self.cb.remove()
+            self.colorbar.remove() 
         except:
             pass
-        im = self.axis1.imshow(z,cmap=plt.cm.jet,extent=[x.min(),x.max(),y.min(),y.max()],origin='lower')
-        self.cb = self.fig1.colorbar(im, ax=self.axis1)
-        self.axis1.set_title(self.fname,fontsize = 8)
-        self.canvas1.draw()
+        im = axis1.imshow(z,cmap=plt.cm.jet,extent=[x.min(),x.max(),y.min(),y.max()],origin='lower')
+        self.colorbar = fig1.colorbar(im, ax=axis1)
+        axis1.set_title(fname,fontsize = 8)
+        canvas1.draw()
     
-    def _clean(self,):
+    def _clean(self):
+        fig2 = self.fig2
+        canvas2 = self.canvas2
         try:
-            self.axis11.get_legend().remove()
+            axis11.get_legend().remove()
         except:
             pass
-        self.fig2.clf()
-        self.canvas2.draw()
+        fig2.clf()
+        canvas2.draw()
     
     # show coordination
     def getClickedCord(self,event):
-        # global x0
-        # global y0
-        # global box
-        self.x0 = round(event.xdata,4)
-        self.y0 = round(event.ydata,4)
-        print('you pressed', self.x0, self.y0)
+        x0 = self.x0 = round(event.xdata,4)
+        y0 = self.y0 = round(event.ydata,4)
+        axis11 = self.axis11
+        choiceVar = self.choiceVar
+        canvas1 = self.canvas1
+        coordination_input = self.coordination_input
+        box = self.box
+        print('you pressed', x0, y0)
         try:
-            self.axis11.collections[0].remove()
-            while self.axis11.lines != []:
-                self.axis11.lines[0].remove()
+            axis11.collections[0].remove()
+            while axis11.lines != []:
+                axis11.lines[0].remove()
         except:
             pass
-        self.axis11.scatter(self.x0,self.y0,marker ='x',color='black')
-        self.canvas1.draw()
-        if self.choiceVar.get() == "gaussian fitting":
-            self.coordination_input.delete('0', tk.END)
-            self.coordination_input.insert(-1,(self.x0, ',', self.y0))
-            print(self.coordination_input.get())
-        if self.choiceVar.get() == "manual linecut":
-            self.box.append((self.x0,self.y0))
-            if len(self.box) > 2:
-                self.box.pop(0)
-            if len(self.box) == 2:
+        axis11.scatter(x0,y0,marker ='x',color='black')
+        canvas1.draw()
+        if choiceVar.get() == "gaussian fitting":
+            coordination_input.delete('0', tk.END)
+            coordination_input.insert(-1,(x0, ',', y0))
+            print(coordination_input.get())
+        if choiceVar.get() == "manual linecut":
+            box.append((x0,y0))
+            if len(box) > 2:
+                box.pop(0)
+            if len(box) == 2:
                 try:
-                    self.axis11.lines.remove()
-                    while self.axis11.lines != []:
-                        self.axis11.lines[0].remove()
+                    axis11.lines.remove()
+                    while axis11.lines != []:
+                        axis11.lines[0].remove()
                 except:
                     pass
-                box = self.box
-                self.axis11.plot([box[0][0],box[1][0]],[box[0][1],box[1][1]],marker ='x',color='black')
-                self.canvas1.draw()
-            self.coordination_input.delete('0', tk.END)
-            self.coordination_input.insert(-1,self.box)
+                #box = self.box
+                axis11.plot([box[0][0],box[1][0]],[box[0][1],box[1][1]],marker ='x',color='black')
+                canvas1.draw()
+            coordination_input.delete('0', tk.END)
+            coordination_input.insert(-1,box)
     
     def _gaussian_fitting(self):
         sample = self.sample
@@ -239,13 +247,15 @@ class image_analyzer:
         box = self.box
         sample = self.sample
         fname = self.fname
+        canvas2 = self.canvas2
+        fig2 = self.fig2
         x1,y1,x2,y2 = box[0][0],box[0][1],box[1][0],box[1][1]
-        self.sample.manual_linecut(x1,y1,x2,y2)
+        sample.manual_linecut(x1,y1,x2,y2)
         # linecut plot
-        axis2 = self.fig2.add_subplot(111)
+        axis2 = fig2.add_subplot(111)
         axis2.plot(sample.linecut_profile,sample.linecut_raw_data,marker ='d', label=fname)
         axis2.legend()
-        self.canvas2.draw()
+        canvas2.draw()
         
     def _Try(self,event):
         choiceVar = self.choiceVar
@@ -257,7 +267,6 @@ class image_analyzer:
             self._initiate_manual_linecutfitting()
                 
     def _initiate_gaussianfitting(self):
-        # global button_4
         button_4 = self.button_4
         self.canvas1.mpl_connect('button_release_event', self.getClickedCord)
         button_4.grid_forget()
@@ -288,3 +297,5 @@ class image_analyzer:
         print("success")
 
 temp = image_analyzer()
+
+
